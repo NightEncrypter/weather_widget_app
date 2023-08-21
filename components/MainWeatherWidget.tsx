@@ -7,6 +7,7 @@ import {
   Animated,
   GestureResponderEvent,
   Image,
+  RefreshControl,
 } from 'react-native';
 type Props = {
   forecast?: string;
@@ -17,9 +18,11 @@ type Props = {
   countryName?: string;
   currentWeather?: string;
   currentTemperature?: string;
-  onRefresh?: (event: GestureResponderEvent) => void;
+  onRefresh?: () => void;
+  refreshing: boolean;
 };
 const MainWeatherWidget: FC<Props> = ({
+  refreshing,
   humidity,
   forecast,
   windkph,
@@ -35,11 +38,11 @@ const MainWeatherWidget: FC<Props> = ({
   useEffect(() => {
     // Trigger animation whenever weather changes
     Animated.timing(animation, {
-      toValue: 1,
+      toValue: 0,
       duration: 500,
       useNativeDriver: true,
     }).start();
-  }, [currentWeather]);
+  }, [imgSource]);
 
   const interpolateAnimation = animation.interpolate({
     inputRange: [0, 1],
@@ -51,61 +54,71 @@ const MainWeatherWidget: FC<Props> = ({
   };
 
   return (
-    <View className="mx-4 flex justify-around flex-1 mb-2">
-      {/* location */}
-      <Text className="text-white text-center text-2xl font-bold">
-        {cityName},
-        <Text className="text-lg font-semibold text-gray-300">
-          {countryName}
+    <RefreshControl
+      onRefresh={onRefresh}
+      refreshing={refreshing}
+      className=" flex-1">
+      <View className="mx-4 flex justify-around flex-1 my-8">
+        {/* location */}
+        <Text className="text-white text-center text-2xl font-bold">
+          {cityName},
+          <Text className="text-lg font-semibold text-gray-300">
+            {countryName}
+          </Text>
         </Text>
-      </Text>
-      {/* weather icon */}
-      <View className="flex-row justify-center">
-        <Animated.Image
-          // source={{uri: 'https:'+current?.condition?.icon}}
-          source={imgSource}
-          className="w-52 h-52"
-        />
-      </View>
-      {/* degree celcius */}
-      <View className="space-y-2">
-        <Text className="text-center font-bold text-white text-6xl ml-5">
-          {currentTemperature}&#176;
-        </Text>
-        <Text className="text-center text-white text-xl tracking-widest">
-          {currentWeather}
-        </Text>
-      </View>
+        {/* weather icon */}
+        <View className="flex-row justify-center relative ">
+          <Animated.Image
+            style={animatedStyles}
+            // source={{uri: 'https:'+current?.condition?.icon}}
+            source={imgSource}
+            className="w-52 h-52 -z-50"
+          />
+        </View>
+        {/* degree celcius */}
+        <View className="space-y-2 my-8">
+          <Text className="text-center font-bold text-white text-6xl ml-5">
+            {currentTemperature}&#176;C
+          </Text>
+          <Text className="text-center text-white text-xl tracking-widest">
+            {currentWeather}
+          </Text>
+        </View>
 
-      {/* other stats */}
-      <View className="flex-row justify-between mx-4">
-        <View className="flex-row space-x-2 items-center">
-          <Image
-            source={require('../assets/icons/wind.png')}
-            className="w-6 h-6"
-          />
-          <Text className="text-white font-semibold text-base">
-            {windkph}km
-          </Text>
+        {/* other stats */}
+        <View className="flex-row justify-between mx-4 mt-2">
+          <View className="flex-row space-x-2 items-center">
+            <Image
+              source={require('../assets/icons/wind.png')}
+              className="w-6 h-6"
+            />
+            <Text className="text-white font-semibold text-base">
+              {windkph}km
+            </Text>
+          </View>
+          <View className="flex-row space-x-2 items-center">
+            <Image
+              source={require('../assets/icons/drop.png')}
+              className="w-6 h-6"
+            />
+            <Text className="text-white font-semibold text-base">
+              {humidity}%
+            </Text>
+          </View>
+          <View className="flex-row space-x-2 items-center">
+            <Image
+              source={require('../assets/icons/sun.png')}
+              className="w-6 h-6"
+            />
+            <Text className="text-white font-semibold text-base">
+              {forecast}
+            </Text>
+          </View>
         </View>
-        <View className="flex-row space-x-2 items-center">
-          <Image
-            source={require('../assets/icons/drop.png')}
-            className="w-6 h-6"
-          />
-          <Text className="text-white font-semibold text-base">
-            {humidity}%
-          </Text>
-        </View>
-        <View className="flex-row space-x-2 items-center">
-          <Image
-            source={require('../assets/icons/sun.png')}
-            className="w-6 h-6"
-          />
-          <Text className="text-white font-semibold text-base">{forecast}</Text>
-        </View>
+
+        {/* <Text>Pull to refresh</Text> */}
       </View>
-    </View>
+    </RefreshControl>
   );
 };
 

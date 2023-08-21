@@ -9,8 +9,8 @@ This React Native app displays weather information for a given city in a customi
 ## Features
 
 - Display weather conditions and temperature for a specified city.
-  <!-- - Supports smooth animated transitions between different weather conditions. -->
-  <!-- - Implements "Pull to Refresh" functionality for updating weather data. -->
+  - Supports smooth animated transitions between different weather conditions.
+  - Implements "Pull to Refresh" functionality for updating weather data.
 - Utilizes Tailwind CSS for styling the components.
 - Fetches weather data using Axios from a mock API.
 - Stores data locally using Async Storage.

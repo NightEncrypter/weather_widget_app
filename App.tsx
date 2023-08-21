@@ -367,6 +367,8 @@ import {
   ScrollView,
   SafeAreaView,
   Animated,
+  RefreshControl,
+  Dimensions,
 } from 'react-native';
 import React, {useCallback, useEffect, useState} from 'react';
 // import { SafeAreaView } from 'react-native-safe-area-context';
@@ -437,7 +439,7 @@ export default function App() {
 
   const fetchMyWeatherData = async () => {
     let myCity = await getData('city');
-    let cityName = 'Islamabad';
+    let cityName = 'Bhopal';
     if (myCity) {
       cityName = myCity;
     }
@@ -451,16 +453,6 @@ export default function App() {
     });
   };
   1;
-  const [animation] = useState(new Animated.Value(0));
-
-  useEffect(() => {
-    // Trigger animation whenever weather changes
-    Animated.timing(animation, {
-      toValue: 1,
-      duration: 500,
-      useNativeDriver: true,
-    }).start();
-  }, [weatherImages]);
 
   const handleTextDebounce = useCallback(debounce(handleSearch, 1200), []);
 
@@ -470,120 +462,130 @@ export default function App() {
     <View className="flex-1 relative">
       {/* <StatusBar style="light" /> */}
       <Image
-        blurRadius={70}
+        blurRadius={20}
         source={require('./assets/img/im1.jpg')}
-        className="absolute w-full h-full"
+        className="absolute w-full h-full "
       />
-      {loading ? (
-        <View className="flex-1 flex-row justify-center items-center">
-          <Progress.CircleSnail thickness={10} size={140} color="#0bb3b2" />
-        </View>
-      ) : (
-        <SafeAreaView className="flex flex-1">
-          {/* search section */}
-          <View style={{height: '7%'}} className="mx-4 relative z-50">
+      <ScrollView className="flex-1">
+        {loading ? (
+          <View className="flex-1 flex-row justify-center items-center">
+            <Progress.CircleSnail thickness={10} size={140} color="#0bb3b2" />
+          </View>
+        ) : (
+          <SafeAreaView className="flex flex-1">
+            {/* search section */}
             <View
-              className="flex-row justify-end items-center rounded-full"
-              style={{
-                backgroundColor: showSearch
-                  ? theme.bgWhite(0.2)
-                  : 'transparent',
-              }}>
-              {showSearch ? (
-                <TextInput
-                  onChangeText={handleTextDebounce}
-                  placeholder="Search city"
-                  placeholderTextColor={'lightgray'}
-                  className="pl-6 h-10 pb-1 flex-1 text-base text-white"
-                />
-              ) : null}
-              <TouchableOpacity
-                onPress={() => toggleSearch(!showSearch)}
-                className="rounded-full p-3 m-1"
-                style={{backgroundColor: theme.bgWhite(0.3)}}>
+              style={{height: '7%', zIndex: 100}}
+              className="mx-4 relative my-2 ">
+              <View
+                className="flex-row justify-end items-center rounded-full"
+                style={{
+                  backgroundColor: showSearch
+                    ? theme.bgWhite(0.2)
+                    : 'transparent',
+                }}>
                 {showSearch ? (
-                  <XMarkIcon size="25" color="white" />
-                ) : (
-                  <MagnifyingGlassIcon size="25" color="white" />
-                )}
-              </TouchableOpacity>
+                  <TextInput
+                    onChangeText={handleTextDebounce}
+                    placeholder="Search city"
+                    placeholderTextColor={'lightgray'}
+                    className="px-6  h-10 flex-1 text-base text-white"
+                  />
+                ) : null}
+                <TouchableOpacity
+                  onPress={() => toggleSearch(!showSearch)}
+                  className="rounded-full p-3 m-1"
+                  style={{backgroundColor: theme.bgWhite(0.3)}}>
+                  {showSearch ? (
+                    <XMarkIcon size="25" color="white" />
+                  ) : (
+                    <MagnifyingGlassIcon size="25" color="white" />
+                  )}
+                </TouchableOpacity>
+              </View>
+              {locations.length > 0 && showSearch ? (
+                <View className="absolute w-full bg-gray-300 top-16 rounded-3xl ">
+                  {locations.map((loc, index) => {
+                    let showBorder = index + 1 != locations.length;
+                    let borderClass = showBorder
+                      ? ' border-b-2 border-b-gray-400'
+                      : '';
+                    return (
+                      <TouchableOpacity
+                        key={index}
+                        onPress={() => handleLocation(loc as any)}
+                        className={
+                          'flex-row items-center border-0 p-3 px-4 mb-1 ' +
+                          borderClass
+                        }>
+                        <MapPinIcon size="20" color="gray" />
+                        <Text className="text-black text-lg ml-2">
+                          {loc?.name}, {loc?.country}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              ) : null}
             </View>
-            {locations.length > 0 && showSearch ? (
-              <View className="absolute w-full bg-gray-300 top-16 rounded-3xl ">
-                {locations.map((loc, index) => {
-                  let showBorder = index + 1 != locations.length;
-                  let borderClass = showBorder
-                    ? ' border-b-2 border-b-gray-400'
-                    : '';
+
+            <MainWeatherWidget
+              refreshing={loading}
+              onRefresh={() => {
+                console.log('data');
+
+                fetchMyWeatherData();
+              }}
+              forecast={weather?.forecast?.forecastday?.at(0)?.astro?.sunrise}
+              humidity={current?.humidity}
+              windkph={current?.wind_kph}
+              cityName={location?.name}
+              countryName={location?.country}
+              currentTemperature={current?.temp_c}
+              currentWeather={current?.condition?.text}
+              imgSource={weatherImages[current?.condition?.text ?? 'other']}
+            />
+
+            {/* forecast for next days */}
+            <View className="mb-2 space-y-3">
+              <View className="flex-row items-center mx-5 space-x-2">
+                <CalendarDaysIcon size="22" color="white" />
+                <Text className="text-white text-base">Daily forecast</Text>
+              </View>
+              <ScrollView
+                horizontal
+                contentContainerStyle={{paddingHorizontal: 15}}
+                showsHorizontalScrollIndicator={false}>
+                {weather?.forecast?.forecastday?.map((item: any, index) => {
+                  const date = new Date(item.date);
+                  const options = {weekday: 'long'} as Object;
+                  let dayName = date.toLocaleDateString('en-US', options);
+                  dayName = dayName.split(',')[0];
+
                   return (
-                    <TouchableOpacity
+                    <View
                       key={index}
-                      onPress={() => handleLocation(loc as any)}
-                      className={
-                        'flex-row items-center border-0 p-3 px-4 mb-1 ' +
-                        borderClass
-                      }>
-                      <MapPinIcon size="20" color="gray" />
-                      <Text className="text-black text-lg ml-2">
-                        {loc?.name}, {loc?.country}
+                      className="flex justify-center items-center w-24 rounded-3xl py-3 space-y-1 mr-4"
+                      style={{backgroundColor: theme.bgWhite(0.15)}}>
+                      <Image
+                        // source={{uri: 'https:'+item?.day?.condition?.icon}}
+                        source={
+                          weatherImages[item?.day?.condition?.text || 'other']
+                        }
+                        className="w-11 h-11"
+                      />
+                      <Text className="text-white">{dayName}</Text>
+                      <Text className="text-white text-xl font-semibold">
+                        {item?.day?.avgtemp_c}&#176;
                       </Text>
-                    </TouchableOpacity>
+                    </View>
                   );
                 })}
-              </View>
-            ) : null}
-          </View>
-
-          <MainWeatherWidget
-            forecast={weather?.forecast?.forecastday?.at(0)?.astro?.sunrise}
-            humidity={current?.humidity}
-            windkph={current?.wind_kph}
-            cityName={location?.name}
-            countryName={location?.country}
-            currentTemperature={current?.temp_c}
-            currentWeather={current?.condition?.text}
-            imgSource={weatherImages[current?.condition?.text || 'other']}
-          />
-
-          {/* forecast for next days */}
-          <View className="mb-2 space-y-3">
-            <View className="flex-row items-center mx-5 space-x-2">
-              <CalendarDaysIcon size="22" color="white" />
-              <Text className="text-white text-base">Daily forecast</Text>
+              </ScrollView>
             </View>
-            <ScrollView
-              horizontal
-              contentContainerStyle={{paddingHorizontal: 15}}
-              showsHorizontalScrollIndicator={false}>
-              {weather?.forecast?.forecastday?.map((item: any, index) => {
-                const date = new Date(item.date);
-                const options = {weekday: 'long'} as Object;
-                let dayName = date.toLocaleDateString('en-US', options);
-                dayName = dayName.split(',')[0];
-
-                return (
-                  <View
-                    key={index}
-                    className="flex justify-center items-center w-24 rounded-3xl py-3 space-y-1 mr-4"
-                    style={{backgroundColor: theme.bgWhite(0.15)}}>
-                    <Image
-                      // source={{uri: 'https:'+item?.day?.condition?.icon}}
-                      source={
-                        weatherImages[item?.day?.condition?.text || 'other']
-                      }
-                      className="w-11 h-11"
-                    />
-                    <Text className="text-white">{dayName}</Text>
-                    <Text className="text-white text-xl font-semibold">
-                      {item?.day?.avgtemp_c}&#176;
-                    </Text>
-                  </View>
-                );
-              })}
-            </ScrollView>
-          </View>
-        </SafeAreaView>
-      )}
+          </SafeAreaView>
+        )}
+      </ScrollView>
     </View>
   );
 }
