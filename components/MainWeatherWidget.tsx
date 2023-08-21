@@ -42,7 +42,7 @@ const MainWeatherWidget: FC<Props> = ({
       duration: 500,
       useNativeDriver: true,
     }).start();
-  }, [imgSource]);
+  }, [currentWeather]);
 
   const interpolateAnimation = animation.interpolate({
     inputRange: [0, 1],
